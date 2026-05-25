@@ -1,0 +1,6 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+milvus==2.2.16
+pymilvus==3.0.0
+sentence-transformers==2.3.1
+pydantic==2.5.3

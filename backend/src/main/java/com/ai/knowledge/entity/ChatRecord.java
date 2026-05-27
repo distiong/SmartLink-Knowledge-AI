@@ -11,22 +11,26 @@ public class ChatRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private Long userId;
-    
+
     @Column(columnDefinition = "TEXT")
     private String question;
-    
+
     @Column(columnDefinition = "TEXT")
     private String answer;
-    
+
     private String chatType = "chat";
-    
+
     private Long sessionId;
-    
+
+    private String modelName;
+
+    private Integer feedback = 0;
+
     private LocalDateTime createTime;
-    
+
     @PrePersist
     public void prePersist() {
         this.createTime = LocalDateTime.now();

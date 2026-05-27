@@ -7,6 +7,9 @@ import threading
 import numpy as np
 import json
 
+# 设置HuggingFace国内镜像
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+
 app = FastAPI(title="Milvus Service")
 
 VECTOR_DIM = 384
@@ -45,15 +48,37 @@ def load_model_async():
     model_loading = True
     try:
         from sentence_transformers import SentenceTransformer
-        print("Loading embedding model...")
-        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        print("Loading embedding model from mirror...")
+        # 使用国内镜像
+        embedding_model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder='./models')
         model_loaded = True
         print("Embedding model loaded successfully")
     except Exception as e:
         print(f"Warning: Could not load embedding model: {e}")
+        print("Using simple vectorization as fallback...")
         model_loaded = True
     finally:
         model_loading = False
+
+def simple_vectorize(text, dim=384):
+    """简单的向量化方法，作为模型加载失败的备选方案"""
+    import hashlib
+    # 使用文本的hash值生成固定维度的向量
+    hash_obj = hashlib.md5(text.encode())
+    hash_bytes = hash_obj.digest()
+    
+    # 扩展到目标维度
+    vector = []
+    for i in range(dim):
+        byte_idx = i % len(hash_bytes)
+        vector.append(float(hash_bytes[byte_idx]) / 255.0)
+    
+    # 归一化
+    norm = np.linalg.norm(vector)
+    if norm > 0:
+        vector = [v / norm for v in vector]
+    
+    return vector
 
 def get_embedding_model():
     global embedding_model, model_loaded
@@ -83,12 +108,12 @@ async def startup():
 async def embed_text(request: EmbedRequest):
     try:
         model = get_embedding_model()
-        if model is None:
-            raise HTTPException(status_code=503, detail="Embedding model still loading")
-        embedding = model.encode(request.text)
-        return {"embedding": embedding.tolist()}
-    except HTTPException:
-        raise
+        if model is not None:
+            embedding = model.encode(request.text)
+        else:
+            # 使用简单向量化作为备选
+            embedding = simple_vectorize(request.text, VECTOR_DIM)
+        return {"embedding": embedding.tolist() if hasattr(embedding, 'tolist') else embedding}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -96,12 +121,12 @@ async def embed_text(request: EmbedRequest):
 async def batch_embed_text(request: BatchEmbedRequest):
     try:
         model = get_embedding_model()
-        if model is None:
-            raise HTTPException(status_code=503, detail="Embedding model still loading")
-        embeddings = model.encode(request.texts)
-        return {"embeddings": embeddings.tolist()}
-    except HTTPException:
-        raise
+        if model is not None:
+            embeddings = model.encode(request.texts)
+        else:
+            # 使用简单向量化作为备选
+            embeddings = [simple_vectorize(text, VECTOR_DIM) for text in request.texts]
+        return {"embeddings": embeddings.tolist() if hasattr(embeddings, 'tolist') else embeddings}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

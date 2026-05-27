@@ -62,7 +62,10 @@ public class MilvusService {
                         String text = (String) result.get("text");
                         Double score = ((Number) result.get("score")).doubleValue();
                         Long docId = ((Number) result.get("document_id")).longValue();
-                        results.add(new SearchResult(text, score, docId));
+                        String fileName = result.get("file_name") != null ? (String) result.get("file_name") : "";
+                        Integer chunkIndex = result.get("chunk_index") != null ? ((Number) result.get("chunk_index")).intValue() : 0;
+                        Integer pageNumber = result.get("page_number") != null ? ((Number) result.get("page_number")).intValue() : 0;
+                        results.add(new SearchResult(text, score, docId, fileName, chunkIndex, pageNumber));
                     }
                 }
             }

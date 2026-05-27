@@ -8,35 +8,51 @@ import java.util.List;
 
 @Service
 public class DocumentService {
-    
+
     @Autowired
     private DocumentRepository documentRepository;
-    
+
     @Autowired
     private MilvusService milvusService;
-    
+
     public List<Document> getAllDocuments() {
         return documentRepository.findAll();
     }
-    
+
     public List<Document> getDocumentsByUserId(Long userId) {
         return documentRepository.findByUserId(userId);
     }
-    
+
     public Document getDocumentById(Long id) {
         return documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("文档不存在"));
     }
-    
+
     public Document saveDocument(Document document) {
         return documentRepository.save(document);
     }
-    
+
     public void deleteDocument(Long id) {
-        // 删除Milvus中的向量数据
         milvusService.deleteByDocumentId(id);
-        
-        // 删除MySQL中的文档记录
         documentRepository.deleteById(id);
+    }
+
+    public List<Document> getDocumentsByCategory(Long categoryId) {
+        return documentRepository.findByCategoryId(categoryId);
+    }
+
+    public List<Document> getDocumentsByUserIdAndCategory(Long userId, Long categoryId) {
+        return documentRepository.findByUserIdAndCategoryId(userId, categoryId);
+    }
+
+    public List<Document> getDocumentsByTag(Long userId, String tag) {
+        if (userId != null) {
+            return documentRepository.findByUserIdAndTag(userId, tag);
+        }
+        return documentRepository.findByTag(tag);
+    }
+
+    public List<Document> searchDocumentsByName(String fileName) {
+        return documentRepository.findByFileNameContaining(fileName);
     }
 }

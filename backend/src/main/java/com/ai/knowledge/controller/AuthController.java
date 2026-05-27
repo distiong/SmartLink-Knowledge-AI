@@ -7,6 +7,7 @@ import com.ai.knowledge.security.JwtAuthenticationFilter;
 import com.ai.knowledge.service.AuthService;
 import com.ai.knowledge.service.MenuService;
 import com.ai.knowledge.service.PermissionService;
+import com.ai.knowledge.annotation.OperationLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +32,7 @@ public class AuthController {
     private PermissionService permissionService;
     
     @PostMapping("/login")
+    @OperationLog(operation = "用户登录", type = "登录")
     public ApiResponse<Map<String, Object>> login(@RequestBody Map<String, String> request) {
         try {
             String username = request.get("username");

@@ -13,6 +13,11 @@
           text-color="#bfcbd9"
           active-text-color="#409eff"
         >
+          <el-menu-item index="/dashboard">
+            <el-icon><DataBoard /></el-icon>
+            <span>数据看板</span>
+          </el-menu-item>
+
           <el-menu-item index="/chat">
             <el-icon><ChatLineRound /></el-icon>
             <span>AI对话</span>
@@ -25,6 +30,7 @@
             </template>
             <el-menu-item index="/rag/chat">RAG问答</el-menu-item>
             <el-menu-item index="/rag/document">文档管理</el-menu-item>
+            <el-menu-item index="/rag/category">分类管理</el-menu-item>
           </el-sub-menu>
           
           <el-menu-item index="/search">
@@ -44,6 +50,9 @@
             </template>
             <el-menu-item index="/system/user">用户管理</el-menu-item>
             <el-menu-item index="/system/role">角色管理</el-menu-item>
+            <el-menu-item index="/system/log">操作日志</el-menu-item>
+            <el-menu-item index="/system/model">模型管理</el-menu-item>
+            <el-menu-item index="/system/config">系统配置</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -57,6 +66,14 @@
               </el-breadcrumb>
             </div>
             <div class="header-right">
+              <el-switch
+                v-model="isDark"
+                inline-prompt
+                :active-icon="Moon"
+                :inactive-icon="Sunny"
+                @change="toggleDark"
+                style="margin-right: 16px"
+              />
               <el-dropdown @command="handleCommand">
                 <span class="user-info">
                   <el-icon><User /></el-icon>
@@ -84,7 +101,9 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
+import { Moon, Sunny } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()
@@ -93,18 +112,26 @@ const userInfo = ref({})
 const isLoggedIn = ref(false)
 const routerKey = ref(0)
 
+const isDark = useDark()
+const toggleDark = useToggle(isDark)
+
 const activeIndex = computed(() => route.path)
 const isAdmin = computed(() => userInfo.value.userType === 1)
 
 const currentTitle = computed(() => {
   const titleMap = {
+    '/dashboard': '数据看板',
     '/chat': 'AI对话',
     '/rag/chat': 'RAG问答',
     '/rag/document': '文档管理',
+    '/rag/category': '分类管理',
     '/search': '向量检索',
     '/graph': '知识图谱',
     '/system/user': '用户管理',
-    '/system/role': '角色管理'
+    '/system/role': '角色管理',
+    '/system/log': '操作日志',
+    '/system/model': '模型管理',
+    '/system/config': '系统配置'
   }
   return titleMap[route.path] || ''
 })
@@ -262,5 +289,206 @@ body {
   background-color: #f0f2f5;
   min-height: calc(100vh - 60px);
   padding: 20px;
+}
+
+/* 暗色模式样式 */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #1a1a1a;
+  color: #e5eaf3;
+}
+
+html.dark .el-header {
+  background-color: #1d1e1f;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .el-main {
+  background-color: #0a0a0a;
+}
+
+html.dark .el-card {
+  background-color: #1d1e1f;
+  border-color: #333;
+}
+
+html.dark .el-card__header {
+  border-bottom-color: #333;
+}
+
+html.dark .el-input__wrapper {
+  background-color: #303030;
+  box-shadow: 0 0 0 1px #4c4d4f inset;
+}
+
+html.dark .el-input__inner {
+  color: #e5eaf3;
+}
+
+html.dark .el-textarea__inner {
+  background-color: #303030;
+  color: #e5eaf3;
+  border-color: #4c4d4f;
+}
+
+html.dark .el-table {
+  background-color: #1d1e1f;
+  color: #e5eaf3;
+}
+
+html.dark .el-table th.el-table__cell {
+  background-color: #262727;
+  color: #e5eaf3;
+  border-bottom-color: #333;
+}
+
+html.dark .el-table td.el-table__cell {
+  border-bottom-color: #333;
+}
+
+html.dark .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: #262727;
+}
+
+html.dark .el-table__body tr:hover > td.el-table__cell {
+  background-color: #333;
+}
+
+html.dark .el-dialog {
+  background-color: #1d1e1f;
+}
+
+html.dark .el-dialog__header {
+  border-bottom-color: #333;
+}
+
+html.dark .el-dialog__title {
+  color: #e5eaf3;
+}
+
+html.dark .el-form-item__label {
+  color: #e5eaf3;
+}
+
+html.dark .el-divider {
+  border-color: #333;
+}
+
+html.dark .el-divider__text {
+  background-color: #1d1e1f;
+  color: #909399;
+}
+
+html.dark .el-tag {
+  border-color: #4c4d4f;
+}
+
+html.dark .el-tag--info {
+  background-color: #333;
+  color: #e5eaf3;
+}
+
+html.dark .el-dropdown-menu {
+  background-color: #1d1e1f;
+  border-color: #333;
+}
+
+html.dark .el-dropdown-menu__item {
+  color: #e5eaf3;
+}
+
+html.dark .el-dropdown-menu__item:hover {
+  background-color: #333;
+}
+
+html.dark .el-breadcrumb__inner {
+  color: #909399;
+}
+
+html.dark .el-breadcrumb__inner.is-link:hover {
+  color: #409eff;
+}
+
+html.dark .el-pagination {
+  color: #909399;
+}
+
+html.dark .el-pagination button:disabled {
+  background-color: #333;
+  color: #666;
+}
+
+html.dark .el-pager li {
+  background-color: #333;
+  color: #909399;
+}
+
+html.dark .el-pager li.is-active {
+  background-color: #409eff;
+  color: #fff;
+}
+
+html.dark .el-menu {
+  background-color: #1d1e1f;
+  border-right-color: #333;
+}
+
+html.dark .el-menu-item {
+  color: #909399;
+}
+
+html.dark .el-menu-item:hover {
+  background-color: #333;
+}
+
+html.dark .el-menu-item.is-active {
+  color: #409eff;
+}
+
+html.dark .el-sub-menu__title {
+  color: #909399;
+}
+
+html.dark .el-sub-menu__title:hover {
+  background-color: #333;
+}
+
+html.dark .user-info {
+  color: #e5eaf3;
+}
+
+html.dark .message-bubble {
+  background-color: #333;
+  color: #e5eaf3;
+}
+
+html.dark .user-message .message-bubble {
+  background-color: #409eff;
+  color: #fff;
+}
+
+html.dark .context-content {
+  background-color: #262727;
+  color: #909399;
+}
+
+html.dark .session-item:hover {
+  background-color: #333;
+}
+
+html.dark .session-item.active {
+  background-color: #1a3a5c;
+  border-color: #1a5c9e;
+}
+
+html.dark .relation-item {
+  background-color: #262727;
+}
+
+html.dark .el-empty__description p {
+  color: #909399;
 }
 </style>

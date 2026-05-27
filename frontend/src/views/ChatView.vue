@@ -51,9 +51,23 @@
           <template #header>
             <div class="card-header">
               <span>{{ currentSessionTitle }}</span>
-              <el-tag type="info" size="small">
-                消息长度限制: {{ maxMessageLength }} 字符
-              </el-tag>
+              <div class="header-actions">
+                <el-dropdown @command="exportChat" v-if="messages.length > 0">
+                  <el-button type="primary" size="small">
+                    导出记录 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="excel">导出为Excel</el-dropdown-item>
+                      <el-dropdown-item command="word">导出为Word</el-dropdown-item>
+                      <el-dropdown-item command="pdf">导出为PDF</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+                <el-tag type="info" size="small">
+                  消息长度限制: {{ maxMessageLength }} 字符
+                </el-tag>
+              </div>
             </div>
           </template>
           
@@ -71,6 +85,24 @@
                 </div>
                 <div class="message-text">
                   <div class="message-bubble">{{ msg.content }}</div>
+                  <div v-if="msg.role === 'ai' && msg.recordId" class="message-feedback">
+                    <el-button
+                      :type="msg.feedback === 1 ? 'success' : 'default'"
+                      size="small"
+                      text
+                      @click="submitFeedback(msg.recordId, 1)"
+                    >
+                      <el-icon><Select /></el-icon>
+                    </el-button>
+                    <el-button
+                      :type="msg.feedback === 2 ? 'danger' : 'default'"
+                      size="small"
+                      text
+                      @click="submitFeedback(msg.recordId, 2)"
+                    >
+                      <el-icon><CloseBold /></el-icon>
+                    </el-button>
+                  </div>
                   <div class="message-time">{{ formatTime(msg.createTime) }}</div>
                 </div>
               </div>
@@ -128,7 +160,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { Loading, Plus, Delete } from '@element-plus/icons-vue'
+import { Loading, Plus, Delete, Select, CloseBold, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -195,7 +227,7 @@ const switchSession = async (sessionId) => {
   currentSessionId.value = sessionId
   const session = sessions.value.find(s => s.id === sessionId)
   currentSessionTitle.value = session ? session.title : '新对话'
-  
+
   try {
     const response = await axios.get(`/api/ai/sessions/${sessionId}/messages`, getHeaders())
     if (response.data.code === 200) {
@@ -210,6 +242,8 @@ const switchSession = async (sessionId) => {
         messages.value.push({
           role: 'ai',
           content: record.answer,
+          recordId: record.id,
+          feedback: record.feedback || 0,
           createTime: record.createTime
         })
       })
@@ -245,42 +279,96 @@ const deleteSession = async (sessionId) => {
   }
 }
 
+const submitFeedback = async (recordId, feedback) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await axios.post('/api/ai/feedback', {
+      recordId,
+      feedback
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    if (response.data.code === 200) {
+      const msg = messages.value.find(m => m.recordId === recordId)
+      if (msg) {
+        msg.feedback = feedback
+      }
+      ElMessage.success(feedback === 1 ? '已点赞' : '已点踩')
+    }
+  } catch (error) {
+    ElMessage.error('反馈失败')
+  }
+}
+
+const exportChat = async (format) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await axios.get(`/api/export/chat/${format}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      responseType: 'blob'
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `chat_records.${format === 'excel' ? 'xlsx' : format}`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+  }
+}
+
 const sendMessage = async () => {
   if (!inputMessage.value.trim() || loading.value) return
-  
+
   if (inputMessage.value.length > maxMessageLength) {
     ElMessage.error(`消息长度超过限制（最大${maxMessageLength}字符）`)
     return
   }
-  
+
   const userMessage = inputMessage.value.trim()
   inputMessage.value = ''
-  
+
   messages.value.push({ role: 'user', content: userMessage })
   loading.value = true
   scrollToBottom()
-  
+
   try {
+    const token = localStorage.getItem('token')
+    
+    // 使用普通接口而非SSE
     const response = await axios.post('/api/ai/chat', {
       message: userMessage,
       sessionId: currentSessionId.value
-    }, getHeaders())
-    
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
     if (response.data.code === 200) {
       const data = response.data.data
-      messages.value.push({ role: 'ai', content: data.answer })
-      
-      // 更新sessionId
-      if (!currentSessionId.value) {
+      messages.value.push({
+        role: 'ai',
+        content: data.answer,
+        recordId: data.recordId || null,
+        feedback: 0
+      })
+
+      if (!currentSessionId.value && data.sessionId) {
         currentSessionId.value = data.sessionId
       }
-      
-      // 更新会话列表
+
       fetchSessions()
     } else {
       messages.value.push({ role: 'ai', content: '抱歉，请求失败：' + response.data.msg })
     }
   } catch (error) {
+    console.error('AI对话失败:', error)
     messages.value.push({ role: 'ai', content: '抱歉，请求失败，请稍后重试。' })
   } finally {
     loading.value = false
@@ -383,6 +471,12 @@ onMounted(() => {
   align-items: center;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -421,6 +515,16 @@ onMounted(() => {
 .ai-message .message-bubble {
   background-color: #f4f4f5;
   color: #303133;
+}
+
+.message-feedback {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.message-feedback .el-button {
+  padding: 4px 8px;
 }
 
 .message-time {

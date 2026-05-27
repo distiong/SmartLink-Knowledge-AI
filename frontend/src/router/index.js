@@ -9,7 +9,13 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/chat'
+    redirect: '/dashboard'
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../views/DashboardView.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/chat',
@@ -34,6 +40,12 @@ const routes = [
     name: 'Document',
     component: () => import('../views/DocumentView.vue'),
     meta: { requiresAuth: true, permission: 'rag:document' }
+  },
+  {
+    path: '/rag/category',
+    name: 'Category',
+    component: () => import('../views/CategoryView.vue'),
+    meta: { requiresAuth: true, permission: 'rag:category' }
   },
   {
     path: '/search',
@@ -64,6 +76,24 @@ const routes = [
     name: 'Role',
     component: () => import('../views/RoleView.vue'),
     meta: { requiresAuth: true, permission: 'system:role' }
+  },
+  {
+    path: '/system/log',
+    name: 'Log',
+    component: () => import('../views/LogView.vue'),
+    meta: { requiresAuth: true, permission: 'system:log' }
+  },
+  {
+    path: '/system/model',
+    name: 'Model',
+    component: () => import('../views/ModelView.vue'),
+    meta: { requiresAuth: true, permission: 'system:model' }
+  },
+  {
+    path: '/system/config',
+    name: 'Config',
+    component: () => import('../views/ConfigView.vue'),
+    meta: { requiresAuth: true, permission: 'system:config' }
   },
   {
     path: '/system/user/:id/permission',

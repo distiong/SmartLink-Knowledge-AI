@@ -28,7 +28,19 @@ public class Document {
     
     @Column(name = "user_id")
     private Long userId;
-    
+
+    @Column(name = "category_id")
+    private Long categoryId;
+
+    @Column(name = "tags", length = 500)
+    private String tags;
+
+    @Column(name = "version")
+    private Integer version;
+
+    @Column(name = "file_path", length = 500)
+    private String filePath;
+
     @Column(name = "create_time")
     private LocalDateTime createTime;
     

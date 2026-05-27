@@ -139,6 +139,23 @@
           <div class="upload-section">
             <input type="file" ref="fileInput" @change="handleFileChange"
                    accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.csv,.md,.html" style="display:none" />
+            
+            <el-form label-width="70px" size="small">
+              <el-form-item label="分类">
+                <el-select v-model="uploadForm.categoryId" placeholder="选择分类" clearable style="width:100%">
+                  <el-option
+                    v-for="cat in categories"
+                    :key="cat.id"
+                    :label="cat.categoryName"
+                    :value="cat.id"
+                  />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="标签">
+                <el-input v-model="uploadForm.tags" placeholder="多个标签用逗号分隔" />
+              </el-form-item>
+            </el-form>
+
             <el-button type="primary" @click="triggerFileInput" :loading="uploading" style="width:100%">
               <el-icon><UploadFilled /></el-icon>
               选择文件上传
@@ -157,9 +174,14 @@
             </div>
             <el-table :data="documentList" size="small" max-height="400">
               <el-table-column prop="fileName" label="文件名" show-overflow-tooltip />
-              <el-table-column prop="createTime" label="上传时间" width="150">
+              <el-table-column label="分类" width="80">
                 <template #default="{ row }">
-                  {{ formatTime(row.createTime) }}
+                  {{ getCategoryName(row.categoryId) }}
+                </template>
+              </el-table-column>
+              <el-table-column label="标签" width="100" show-overflow-tooltip>
+                <template #default="{ row }">
+                  {{ row.tags || '-' }}
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="60">

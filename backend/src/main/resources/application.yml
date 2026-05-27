@@ -29,7 +29,7 @@ spring:
       password: ${REDIS_PASSWORD:}
 
 ai:
-  api-key: ${AI_API_KEY:your_api_key_here}
+  api-key: ${AI_API_KEY:}
   base-url: ${AI_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
   model: ${AI_MODEL:GLM-4-Flash}
 

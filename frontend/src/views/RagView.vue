@@ -212,7 +212,13 @@ const uploading = ref(false)
 const messagesRef = ref(null)
 const fileInput = ref(null)
 const documentList = ref([])
+const categories = ref([])
 const currentSessionId = ref(null)
+
+const uploadForm = ref({
+  categoryId: null,
+  tags: ''
+})
 
 const quickCommands = [
   { text: '总结本文档', prompt: '请总结本文档的主要内容' },
@@ -306,6 +312,21 @@ const deleteSession = async (sessionId) => {
   }
 }
 
+const fetchCategories = async () => {
+  try {
+    const res = await api.get('/category/list')
+    categories.value = res.data || []
+  } catch (error) {
+    console.error('获取分类列表失败:', error)
+  }
+}
+
+const getCategoryName = (categoryId) => {
+  if (!categoryId) return '未分类'
+  const cat = categories.value.find(c => c.id === categoryId)
+  return cat ? cat.categoryName : '未分类'
+}
+
 const triggerFileInput = () => {
   fileInput.value.click()
 }
@@ -324,6 +345,13 @@ const handleFileChange = async (event) => {
   try {
     const formData = new FormData()
     formData.append('file', file)
+    
+    if (uploadForm.value.categoryId) {
+      formData.append('categoryId', uploadForm.value.categoryId)
+    }
+    if (uploadForm.value.tags) {
+      formData.append('tags', uploadForm.value.tags)
+    }
 
     const token = localStorage.getItem('token')
     const response = await axios.post('/api/rag/upload', formData, {
@@ -337,6 +365,8 @@ const handleFileChange = async (event) => {
       ElMessage.success('文档上传成功')
       fetchDocuments()
       event.target.value = ''
+      // 重置表单
+      uploadForm.value = { categoryId: null, tags: '' }
     } else {
       ElMessage.error(response.data.msg || '上传失败')
     }
@@ -419,6 +449,7 @@ const sendQuestion = async () => {
 onMounted(() => {
   fetchSessions()
   fetchDocuments()
+  fetchCategories()
 })
 </script>
 
